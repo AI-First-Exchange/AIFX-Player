@@ -9,8 +9,8 @@ PAION Player and AIFM Wizard are distributed through **official PAION channels**
 
 Precompiled desktop applications, mobile apps, and signed installers are available via the PAION website and authorized app stores. These paid downloads help fund ongoing development, maintenance, and the AI-First Exchange (AIFX) foundation.
 
-🔗 **Official downloads:** https://paion.io  
-*(Coming soon — link placeholder is fine for now)*
+🔗 **Official downloads:** 
+https://paion.io  
 
 This GitHub repository provides the **source code and reference implementation** for transparency, standards compliance, and developer contribution.
 
