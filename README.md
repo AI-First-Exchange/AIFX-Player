@@ -3,28 +3,33 @@
 PAION Player is a cross-platform AIFM verification & playback app for AI-generated music.
 It runs locally and opens a browser UI via localhost.
 
-## Downloads
-Get the latest build from GitHub Releases.
+## Official Downloads
 
-## macOS Apple Silicon (M1/M2/M3/M4)
-- Download: `PAION-Player-macOS-AppleSilicon.zip`
-- Unzip → Right-click `PAION.app` → Open (first launch)
+PAION Player and AIFM Wizard are distributed through **official PAION channels**.
 
-## macOS Intel
-- Download: `PAION-Player-macOS-Intel.zip`
-- Unzip → Right-click `PAION.app` → Open (first launch)
+Precompiled desktop applications, mobile apps, and signed installers are available via the PAION website and authorized app stores. These paid downloads help fund ongoing development, maintenance, and the AI-First Exchange (AIFX) foundation.
 
-## Windows
-- Download: `PAION-Player-Windows.zip`
-- Extract → Run `PAION.exe`
-- SmartScreen: More info → Run anyway
-- Firewall prompts: allow Private networks (localhost only)
+🔗 **Official downloads:** https://paion.io  
+*(Coming soon — link placeholder is fine for now)*
+
+This GitHub repository provides the **source code and reference implementation** for transparency, standards compliance, and developer contribution.
 
 ## v0.1.0 Features
 - Built-in AIFM verification
 - Metadata inspection
 - Local playback via browser/system
 - No external services required
+
+## Distribution & Licensing
+
+This repository is source-available under the PAION paid-distribution license.
+
+- Source code is provided for review, development, and contribution.
+- Official binaries and packaged applications are distributed exclusively through PAION-authorized channels.
+- Redistribution of compiled applications outside official channels is not permitted without a commercial license.
+
+For licensing inquiries or commercial use, please contact:
+licensing@paion.io
 
 ## Trademarks
 
