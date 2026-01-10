@@ -31,6 +31,8 @@ This repository is source-available under the PAION paid-distribution license.
 For licensing inquiries or commercial use, please contact:
 licensing@paion.io
 
+*(Email routing will be activated shortly. Until then, please use GitHub Issues or Discussions for inquiries.)*
+
 ## Trademarks
 
 PAION™, AIFM™, AIFI™, AIFV™, AIFP™, and AI-First Exchange™ are trademarks of Joseph Simon.
