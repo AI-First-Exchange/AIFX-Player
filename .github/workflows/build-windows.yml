@@ -31,7 +31,7 @@ jobs:
       - name: Build with PyInstaller
         shell: pwsh
         run: |
-          pyinstaller --clean --noconfirm PAION.spec
+          pyinstaller --clean --noconfirm PAION-Player.spec
 
       - name: Inspect dist output
         shell: pwsh
