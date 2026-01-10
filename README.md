@@ -26,3 +26,9 @@ Get the latest build from GitHub Releases.
 - Local playback via browser/system
 - No external services required
 
+## Trademarks
+
+PAION™, AIFM™, AIFI™, AIFV™, AIFP™, and AI-First Exchange™ are trademarks of Joseph Simon.
+
+All other product names, logos, and brands are property of their respective owners.
+
