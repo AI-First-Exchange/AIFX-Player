@@ -1,10 +1,13 @@
-PAION PLAYER SOURCE-AVAILABLE LICENSE
+AIFX PLAYER SOURCE-AVAILABLE LICENSE
 Version 1.0
 
 Copyright (c) 2026 Joseph Simon Simbulan
 
-This license applies to the PAION Player reference implementation.
-It does not restrict independent implementations of the AI First Exchange (AIFX) specifications.
+This license applies to the AIFX Player reference implementation
+(formerly referred to as the PAION Player engine).
+
+It does not restrict independent implementations of the
+AI First Exchange (AIFX) specifications.
 
 ---
 
@@ -14,6 +17,7 @@ You are permitted to:
 
 - View and study the source code
 - Build the software locally for development, testing, and evaluation
+- Run the software locally for personal, educational, or evaluation purposes
 - Modify the source code for personal or internal experimentation
 - Contribute improvements via pull requests (subject to acceptance)
 - Use the software for non-commercial research and evaluation
@@ -26,7 +30,7 @@ You may NOT, without explicit permission:
 
 - Redistribute compiled binaries or packaged applications under the PAION or AIFX names
 - Offer the software for download as a public product or service
-- Sell, sublicense, or monetize the PAION Player itself
+- Sell, sublicense, or monetize the AIFX Player itself
 - Publish mobile or desktop applications derived from this code under the PAION or AIFX branding
 - Use the software as part of a paid SaaS or commercial platform
 
