@@ -121,7 +121,7 @@ def _select_primary_media_path(package_type: str, file_paths: Sequence[str]) -> 
     candidates = [
         path
         for path in file_paths
-        if path.startswith("assets/") and Path(path).suffix.lower() in allowed_exts
+        if (path.startswith("assets/") or path.startswith("payload/")) and Path(path).suffix.lower() in allowed_exts
     ]
     if not candidates:
         raise PrimaryMediaNotFoundError(
