@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import importlib
+import json
 import sys
 from pathlib import Path
 
@@ -85,10 +86,130 @@ class MainWindow(QtWidgets.QMainWindow):
         open_action = file_menu.addAction("Open...")
         open_action.triggered.connect(self.on_open)
 
+        self.metadata_dock = QtWidgets.QDockWidget("Metadata", self)
+        self.metadata_dock.setAllowedAreas(
+            QtCore.Qt.RightDockWidgetArea | QtCore.Qt.LeftDockWidgetArea
+        )
+        self.metadata_scroll = QtWidgets.QScrollArea(self.metadata_dock)
+        self.metadata_scroll.setWidgetResizable(True)
+        self.metadata_container = QtWidgets.QWidget(self.metadata_scroll)
+        self.metadata_layout = QtWidgets.QVBoxLayout(self.metadata_container)
+        self.metadata_layout.setContentsMargins(12, 12, 12, 12)
+        self.metadata_layout.setSpacing(12)
+        self.metadata_scroll.setWidget(self.metadata_container)
+        self.metadata_dock.setWidget(self.metadata_scroll)
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.metadata_dock)
+        self.metadata_dock.hide()
+
+        view_menu = self.menuBar().addMenu("&View")
+        self.metadata_action = view_menu.addAction("Metadata Inspector")
+        self.metadata_action.setCheckable(True)
+        self.metadata_action.setChecked(False)
+        self.metadata_action.toggled.connect(self.metadata_dock.setVisible)
+        self.metadata_dock.visibilityChanged.connect(self.metadata_action.setChecked)
+
     def _set_controls_enabled(self, enabled: bool) -> None:
         self.play_button.setEnabled(enabled)
         self.pause_button.setEnabled(enabled)
         self.stop_button.setEnabled(enabled)
+
+    def _clear_metadata(self) -> None:
+        while self.metadata_layout.count():
+            item = self.metadata_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def _add_metadata_section(self, title: str, rows: list[tuple[str, str]]) -> None:
+        section = QtWidgets.QWidget(self.metadata_container)
+        section_layout = QtWidgets.QVBoxLayout(section)
+        section_layout.setContentsMargins(0, 0, 0, 0)
+        section_layout.setSpacing(6)
+
+        header = QtWidgets.QLabel(title, section)
+        header.setStyleSheet("font-weight: 700;")
+        section_layout.addWidget(header)
+
+        form = QtWidgets.QFormLayout()
+        form.setContentsMargins(0, 0, 0, 0)
+        form.setHorizontalSpacing(12)
+        form.setVerticalSpacing(4)
+        form.setLabelAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop)
+        for key, value in rows:
+            key_label = QtWidgets.QLabel(key, section)
+            value_label = QtWidgets.QLabel(value, section)
+            value_label.setWordWrap(True)
+            value_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            form.addRow(key_label, value_label)
+        section_layout.addLayout(form)
+        self.metadata_layout.addWidget(section)
+
+    def _refresh_metadata(self, result) -> None:
+        self._clear_metadata()
+
+        primary_media_path = result.primary_media_path if result.primary_media_path is not None else "None"
+        self._add_metadata_section(
+            "Package Info",
+            [
+                ("Package Type", str(result.package_type)),
+                ("Primary Media Path", primary_media_path),
+                ("File Count", str(len(result.file_paths))),
+            ],
+        )
+
+        manifest_text = result.manifest_bytes.decode("utf-8", errors="replace")
+        try:
+            manifest_json = json.loads(manifest_text)
+        except Exception:
+            self._add_metadata_section("Manifest", [("Status", "(Invalid JSON)")])
+            raw_label = QtWidgets.QLabel(manifest_text, self.metadata_container)
+            raw_label.setWordWrap(True)
+            raw_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            raw_label.setStyleSheet("background: rgba(255,255,255,0.04); padding: 8px;")
+            self.metadata_layout.addWidget(raw_label)
+            self.metadata_layout.addStretch(1)
+            return
+
+        if isinstance(manifest_json, dict):
+            work = manifest_json.get("work")
+            if isinstance(work, dict):
+                title = work.get("title")
+                if title is not None:
+                    self._add_metadata_section("Work", [("Title", str(title))])
+
+            fmt = manifest_json.get("format")
+            if fmt is not None:
+                self._add_metadata_section("Format", [("Format", str(fmt))])
+
+            aifx_version = manifest_json.get("aifx_version")
+            if aifx_version is not None:
+                self._add_metadata_section("AIFX", [("Version", str(aifx_version))])
+
+            provenance = manifest_json.get("provenance")
+            if isinstance(provenance, dict):
+                provenance_rows: list[tuple[str, str]] = []
+                primary_tool = provenance.get("primary_tool")
+                if primary_tool is not None:
+                    provenance_rows.append(("Primary Tool", str(primary_tool)))
+                supporting_tools = provenance.get("supporting_tools")
+                if supporting_tools is not None:
+                    if isinstance(supporting_tools, list):
+                        supporting_value = ", ".join(str(item) for item in supporting_tools)
+                    else:
+                        supporting_value = str(supporting_tools)
+                    provenance_rows.append(("Supporting Tools", supporting_value))
+                if provenance_rows:
+                    self._add_metadata_section("Provenance", provenance_rows)
+
+            declaration = manifest_json.get("declaration")
+            if declaration is not None:
+                if isinstance(declaration, (dict, list)):
+                    declaration_value = json.dumps(declaration, ensure_ascii=True, indent=2)
+                else:
+                    declaration_value = str(declaration)
+                self._add_metadata_section("Declaration", [("Value", declaration_value)])
+
+        self.metadata_layout.addStretch(1)
 
     def _clear_media_source(self) -> None:
         self.player.stop()
@@ -178,6 +299,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         self.summary_view.setPlainText(_format_summary(result))
+        self._refresh_metadata(result)
         if result.package_type == "aifi" and result.primary_media_bytes is not None:
             self._clear_media_source()
             self.video_widget.hide()
