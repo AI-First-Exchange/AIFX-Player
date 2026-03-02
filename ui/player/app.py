@@ -2,6 +2,7 @@
 import importlib
 import json
 import sys
+from functools import partial
 from pathlib import Path, PurePosixPath
 import zipfile
 
@@ -87,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._media_seekable = False
         self._current_package_path: Path | None = None
         self._current_file_paths: tuple[str, ...] = ()
+        self._recent_paths: list[str] = []
 
         self.audio_output = QAudioOutput(self)
         self.player = QMediaPlayer(self)
@@ -189,9 +191,13 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addLayout(controls_layout)
         self.setCentralWidget(container)
 
-        file_menu = self.menuBar().addMenu("&File")
-        open_action = file_menu.addAction("Open...")
-        open_action.triggered.connect(self.on_open)
+        self.file_menu = self.menuBar().addMenu("&File")
+        self.open_action = self.file_menu.addAction("Open...")
+        self.open_action.triggered.connect(self.on_open)
+        self.recent_menu = self.file_menu.addMenu("Open Recent")
+        self.clear_recent_action = self.file_menu.addAction("Clear Recent")
+        self.clear_recent_action.triggered.connect(self._clear_recent_paths)
+        self._refresh_recent_menu()
 
         self.metadata_dock = QtWidgets.QDockWidget("Metadata", self)
         self.metadata_dock.setAllowedAreas(
@@ -257,6 +263,48 @@ class MainWindow(QtWidgets.QMainWindow):
         self.metadata_toolbar_action.setChecked(False)
         self.metadata_toolbar_action.toggled.connect(self.metadata_dock.setVisible)
         self.metadata_dock.visibilityChanged.connect(self.metadata_toolbar_action.setChecked)
+
+    def _refresh_recent_menu(self) -> None:
+        self.recent_menu.clear()
+        has_recent = bool(self._recent_paths)
+        self.recent_menu.setEnabled(has_recent)
+
+        for index, path in enumerate(self._recent_paths, start=1):
+            basename = Path(path).name or path
+            action = self.recent_menu.addAction(f"{index}. {basename}")
+            action.setToolTip(path)
+            action.triggered.connect(partial(self._open_recent_path, path))
+
+        self.recent_menu.addSeparator()
+        clear_action = self.recent_menu.addAction("Clear Recent")
+        clear_action.setEnabled(has_recent)
+        clear_action.triggered.connect(self._clear_recent_paths)
+
+    def _add_recent_path(self, file_path: str) -> None:
+        self._recent_paths = [p for p in self._recent_paths if p != file_path]
+        self._recent_paths.insert(0, file_path)
+        if len(self._recent_paths) > 10:
+            self._recent_paths = self._recent_paths[:10]
+        self._refresh_recent_menu()
+
+    def _remove_recent_path(self, file_path: str) -> None:
+        self._recent_paths = [p for p in self._recent_paths if p != file_path]
+        self._refresh_recent_menu()
+
+    def _clear_recent_paths(self) -> None:
+        self._recent_paths = []
+        self._refresh_recent_menu()
+
+    def _open_recent_path(self, file_path: str) -> None:
+        if not Path(file_path).exists():
+            QtWidgets.QMessageBox.information(
+                self,
+                "Open Recent",
+                f"File not found:\n{file_path}",
+            )
+            self._remove_recent_path(file_path)
+            return
+        self._open_package_path(file_path)
 
     def _decode_manifest(self, manifest_bytes: bytes) -> tuple[str, dict | None]:
         manifest_text = manifest_bytes.decode("utf-8", errors="replace")
@@ -752,7 +800,9 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         if not file_path:
             return
+        self._open_package_path(file_path)
 
+    def _open_package_path(self, file_path: str) -> None:
         try:
             result = safe_open_package(file_path)
         except SafeOpenError as exc:
@@ -766,6 +816,7 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             return
 
+        self._add_recent_path(file_path)
         manifest_text, manifest_json = self._decode_manifest(result.manifest_bytes)
         self._refresh_metadata(result, manifest_text, manifest_json)
         self._current_package_path = result.package_path
