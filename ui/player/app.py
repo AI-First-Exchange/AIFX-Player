@@ -3,7 +3,7 @@ import importlib
 import sys
 from pathlib import Path
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QBuffer, QByteArray, QIODevice, QUrl
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
@@ -39,6 +39,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._media_bytes_qba: QByteArray | None = None
         self._media_buffer: QBuffer | None = None
+        self._loaded_pixmap: QtGui.QPixmap | None = None
 
         self.audio_output = QAudioOutput(self)
         self.player = QMediaPlayer(self)
@@ -47,6 +48,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.video_widget = QVideoWidget(self)
         self.player.setVideoOutput(self.video_widget)
         self.video_widget.hide()
+        self.image_label = QtWidgets.QLabel(self)
+        self.image_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.image_label.setScaledContents(False)
+        self.image_label.setStyleSheet("background: black;")
+        self.image_label.hide()
 
         self.summary_view = QtWidgets.QPlainTextEdit()
         self.summary_view.setReadOnly(True)
@@ -70,6 +76,7 @@ class MainWindow(QtWidgets.QMainWindow):
         container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(container)
         layout.addWidget(self.video_widget, stretch=2)
+        layout.addWidget(self.image_label, stretch=2)
         layout.addWidget(self.summary_view)
         layout.addLayout(controls_layout)
         self.setCentralWidget(container)
@@ -93,6 +100,36 @@ class MainWindow(QtWidgets.QMainWindow):
         self._media_buffer = None
         self._media_bytes_qba = None
 
+    def _clear_image(self) -> None:
+        self._loaded_pixmap = None
+        self.image_label.clear()
+        self.image_label.hide()
+
+    def _update_scaled_image(self) -> None:
+        if self._loaded_pixmap is None:
+            self.image_label.clear()
+            return
+
+        scaled = self._loaded_pixmap.scaled(
+            self.image_label.size(),
+            QtCore.Qt.KeepAspectRatio,
+            QtCore.Qt.SmoothTransformation,
+        )
+        self.image_label.setPixmap(scaled)
+
+    def _show_image_from_bytes(self, image_bytes: bytes) -> bool:
+        pixmap = QtGui.QPixmap()
+        if not pixmap.loadFromData(image_bytes):
+            QtWidgets.QMessageBox.critical(self, "Image Error", "Failed to decode image.")
+            self._clear_image()
+            return False
+
+        self._loaded_pixmap = pixmap
+        self.video_widget.hide()
+        self.image_label.show()
+        self._update_scaled_image()
+        return True
+
     def _load_media_from_bytes(self, media_bytes: bytes, media_path: str | None) -> None:
         self._clear_media_source()
 
@@ -110,6 +147,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _on_playback_error(self, _error: QMediaPlayer.Error) -> None:
         QtWidgets.QMessageBox.critical(self, "Playback Error", self.player.errorString())
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(event)
+        if self.image_label.isVisible():
+            self._update_scaled_image()
 
     @QtCore.Slot()
     def on_open(self) -> None:
@@ -136,17 +178,25 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         self.summary_view.setPlainText(_format_summary(result))
-        is_playable_media = result.package_type in ("aifm", "aifv") and result.primary_media_bytes is not None
-        is_video = result.package_type == "aifv"
+        if result.package_type == "aifi" and result.primary_media_bytes is not None:
+            self._clear_media_source()
+            self.video_widget.hide()
+            if self._show_image_from_bytes(result.primary_media_bytes):
+                self._set_controls_enabled(False)
+            else:
+                self._set_controls_enabled(False)
+            return
 
-        if is_playable_media:
+        self._clear_image()
+
+        if result.package_type in ("aifm", "aifv") and result.primary_media_bytes is not None:
             self._load_media_from_bytes(result.primary_media_bytes, result.primary_media_path)
             self._set_controls_enabled(True)
+            self.video_widget.setVisible(result.package_type == "aifv")
         else:
             self._clear_media_source()
             self._set_controls_enabled(False)
-
-        self.video_widget.setVisible(is_video)
+            self.video_widget.hide()
 
 
 def main() -> None:
