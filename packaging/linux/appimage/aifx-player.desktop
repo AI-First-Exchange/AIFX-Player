@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=@@APP_NAME@@
+Exec=AppRun
+Icon=@@APP_ID@@
+Terminal=false
+Categories=AudioVideo;Audio;Video;Viewer;Qt;
+StartupWMClass=@@APP_NAME@@
+Comment=Read-only AIFX package viewer
+X-AppImage-Version=@@APP_VERSION@@

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APPDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_NAME="AIFX Player"
+APP_ROOT="$APPDIR/usr/lib/$APP_NAME"
+APP_BIN="$APP_ROOT/$APP_NAME"
+
+cd "$APP_ROOT"
+
+exec "$APP_BIN" "$@"
